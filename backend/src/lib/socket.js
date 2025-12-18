@@ -5,18 +5,24 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
+// Allowed frontend URLs
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://quick-talk-sage.vercel.app",
+  "https://quick-talk-git-main-arpit-kumars-projects-75e7cb12.vercel.app",
+  "https://quick-talk-bpqmm0c9i-arpit-kumars-projects-75e7cb12.vercel.app"
+];
+
+// Initialize Socket.IO with proper CORS
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"],
+    origin: allowedOrigins,
+    credentials: true,
   },
 });
 
-export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
-}
-
 // used to store online users
-const userSocketMap = {}; // {userId: socketId}
+const userSocketMap = {}; // { userId: socketId }
 
 io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
@@ -24,7 +30,7 @@ io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
   if (userId) userSocketMap[userId] = socket.id;
 
-  // io.emit() is used to send events to all the connected clients
+  // Send online users to all clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
@@ -33,5 +39,9 @@ io.on("connection", (socket) => {
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
+
+export function getReceiverSocketId(userId) {
+  return userSocketMap[userId];
+}
 
 export { io, app, server };
